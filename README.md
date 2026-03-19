@@ -79,14 +79,10 @@ pip install matplotlib
 ---
 
 ## 📷 Screenshots
+![Dashboard](dashboard.png)
 
-> Dashboard showing total spending, transaction count, top category and recent entries.
+![Charts](charts.png)
 
-> Charts page with doughnut chart and bar chart breakdown by category.
-
-*(Add screenshots of your running app here!)*
-
----
 
 ## 💡 What I Learned
 
