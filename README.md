@@ -109,7 +109,7 @@ pip install matplotlib
 
 **Tanisha Jha**  
 BCA Student | 2nd Year  
-📧 Connect on [LinkedIn](#) | ⭐ Star this repo if you found it helpful!
+📧 Connect on [LinkedIn] https://www.linkedin.com/in/tanisha-jha-5283a8363?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app | ⭐ Star this repo if you found it helpful!
 
 ---
 
