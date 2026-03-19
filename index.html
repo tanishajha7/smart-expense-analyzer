@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Expense Analyzer — Tanisha Jha</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg:     #0a0a0f;
+      --card:   #12121a;
+      --card2:  #1a1a26;
+      --border: rgba(255,255,255,0.08);
+      --text:   #f0f0ff;
+      --muted:  #7878a0;
+      --p1:     #7C3AED;
+      --p2:     #EC4899;
+      --g1:     #06B6D4;
+      --g2:     #10B981;
+      --y1:     #F59E0B;
+      --r1:     #EF4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+    body::before {
+      content:''; position:fixed; top:-200px; left:-200px;
+      width:600px; height:600px;
+      background:radial-gradient(circle,rgba(124,58,237,0.12) 0%,transparent 70%);
+      pointer-events:none; z-index:0;
+    }
+    body::after {
+      content:''; position:fixed; bottom:-200px; right:-200px;
+      width:600px; height:600px;
+      background:radial-gradient(circle,rgba(236,72,153,0.10) 0%,transparent 70%);
+      pointer-events:none; z-index:0;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width:220px; background:var(--card);
+      border-right:1px solid var(--border);
+      display:flex; flex-direction:column;
+      position:fixed; top:0; left:0; height:100vh;
+      z-index:100; padding-bottom:24px;
+    }
+    .brand { padding:28px 22px 22px; border-bottom:1px solid var(--border); }
+    .brand-logo {
+      width:44px; height:44px; border-radius:12px;
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; margin-bottom:14px;
+      box-shadow:0 0 20px rgba(124,58,237,0.4);
+    }
+    .brand h2 {
+      font-size:0.95rem; font-weight:800;
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      line-height:1.3;
+    }
+    .brand .by { font-size:0.72rem; color:var(--muted); margin-top:4px; }
+    .brand .by span { color:#EC4899; font-weight:600; }
+
+    .nav-sec { padding:16px 12px 0; flex:1; }
+    .nav-lbl {
+      font-size:0.65rem; font-weight:700; letter-spacing:0.12em;
+      text-transform:uppercase; color:var(--muted);
+      padding:0 10px; margin-bottom:6px;
+    }
+    .nav-item {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px; border-radius:10px;
+      color:var(--muted); font-size:0.88rem; font-weight:500;
+      cursor:pointer; transition:all 0.2s; margin-bottom:2px;
+      text-decoration:none;
+    }
+    .nav-item:hover { background:rgba(255,255,255,0.05); color:var(--text); }
+    .nav-item.active { background:rgba(124,58,237,0.15); color:var(--text); }
+    .nav-icon {
+      width:32px; height:32px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.9rem; flex-shrink:0;
+      background:rgba(255,255,255,0.05); transition:all 0.2s;
+    }
+    .nav-item.active .nav-icon, .nav-item:hover .nav-icon {
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      box-shadow:0 4px 12px rgba(124,58,237,0.3); color:white;
+    }
+    .sidebar-bot {
+      padding:16px 22px 0; border-top:1px solid var(--border); margin-top:auto;
+    }
+    .user-chip { display:flex; align-items:center; gap:10px; }
+    .user-av {
+      width:34px; height:34px; border-radius:50%;
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.85rem; font-weight:700; color:white; flex-shrink:0;
+    }
+    .user-name { font-size:0.85rem; font-weight:600; }
+    .user-role { font-size:0.7rem; color:var(--muted); }
+
+    /* MAIN */
+    .main { margin-left:220px; flex:1; padding:28px 32px; position:relative; z-index:1; }
+    .page { display:none; animation:fadeUp 0.3s ease; }
+    .page.active { display:block; }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* HEADER */
+    .pg-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; }
+    .pg-head h1 { font-size:1.65rem; font-weight:800; }
+    .pg-head p  { color:var(--muted); font-size:0.88rem; margin-top:3px; }
+    .live-badge {
+      padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:700;
+      background:rgba(124,58,237,0.15); color:#A78BFA;
+      border:1px solid rgba(124,58,237,0.25);
+    }
+
+    /* STATS */
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+    .sc {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:16px; position:relative;
+      overflow:hidden; transition:transform 0.2s, border-color 0.2s; min-width:0;
+    }
+    .sc:hover { transform:translateY(-3px); }
+    .sc::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+    .sc1::before { background:linear-gradient(90deg,#7C3AED,#EC4899); }
+    .sc2::before { background:linear-gradient(90deg,#06B6D4,#10B981); }
+    .sc3::before { background:linear-gradient(90deg,#F59E0B,#EF4444); }
+    .sc4::before { background:linear-gradient(90deg,#7C3AED,#06B6D4); }
+    .sc:hover.sc1 { border-color:#7C3AED; box-shadow:0 8px 24px rgba(124,58,237,0.15); }
+    .sc:hover.sc2 { border-color:#06B6D4; box-shadow:0 8px 24px rgba(6,182,212,0.15); }
+    .sc:hover.sc3 { border-color:#F59E0B; box-shadow:0 8px 24px rgba(245,158,11,0.15); }
+    .sc:hover.sc4 { border-color:#7C3AED; box-shadow:0 8px 24px rgba(124,58,237,0.15); }
+    .sc-icon {
+      width:40px; height:40px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; margin-bottom:14px;
+    }
+    .sc1 .sc-icon { background:rgba(124,58,237,0.15); }
+    .sc2 .sc-icon { background:rgba(6,182,212,0.15); }
+    .sc3 .sc-icon { background:rgba(245,158,11,0.15); }
+    .sc4 .sc-icon { background:rgba(124,58,237,0.15); }
+    .sc-lbl { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; color:var(--muted); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-val { font-size:1.35rem; font-weight:800; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc1 .sc-val { color:#A78BFA; }
+    .sc2 .sc-val { color:#22D3EE; }
+    .sc3 .sc-val { color:#FCD34D; }
+    .sc4 .sc-val { color:#C084FC; }
+    .sc-sub { font-size:0.75rem; color:var(--muted); margin-top:6px; }
+
+    /* CARD */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    .card-head {
+      padding:16px 22px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .card-head h5 { font-size:0.92rem; font-weight:700; margin:0; }
+    .card-sub { font-size:0.75rem; color:var(--muted); }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; }
+    thead th {
+      font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em;
+      color:var(--muted); font-weight:700; padding:12px 22px;
+      background:rgba(255,255,255,0.02); border-bottom:1px solid var(--border);
+    }
+    tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:rgba(255,255,255,0.03); }
+    tbody td { padding:13px 22px; font-size:0.88rem; }
+    .badge {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:4px 12px; border-radius:20px;
+      font-size:0.75rem; font-weight:700;
+    }
+    .amt-grad {
+      font-weight:800; font-size:0.92rem;
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+
+    /* FORM */
+    .form-wrap { max-width:540px; }
+    .field { margin-bottom:20px; }
+    .field label {
+      display:block; font-size:0.78rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.07em;
+      color:var(--muted); margin-bottom:8px;
+    }
+    .field input {
+      width:100%; background:var(--card2); border:1px solid var(--border);
+      border-radius:10px; color:var(--text); padding:12px 16px;
+      font-size:0.92rem; font-family:'Plus Jakarta Sans',sans-serif;
+      outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus { border-color:var(--p1); box-shadow:0 0 0 3px rgba(124,58,237,0.15); }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .chip {
+      padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600;
+      cursor:pointer; border:1px solid var(--border);
+      background:var(--card2); color:var(--muted); transition:all 0.15s;
+    }
+    .chip:hover {
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      color:white; border-color:transparent;
+      box-shadow:0 4px 12px rgba(124,58,237,0.3);
+    }
+    .btn-sub {
+      width:100%; padding:14px; border:none; border-radius:12px;
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      color:white; font-size:0.95rem; font-weight:700;
+      font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer;
+      transition:opacity 0.2s,transform 0.15s,box-shadow 0.2s;
+      box-shadow:0 4px 20px rgba(124,58,237,0.35); margin-top:8px;
+    }
+    .btn-sub:hover { opacity:0.92; transform:translateY(-2px); box-shadow:0 8px 28px rgba(124,58,237,0.45); }
+    .toast { padding:12px 16px; border-radius:10px; font-size:0.88rem; font-weight:500; margin-top:14px; display:none; }
+    .tok { background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#34D399; }
+    .terr{ background:rgba(239,68,68,0.12);  border:1px solid rgba(239,68,68,0.3);  color:#F87171; }
+
+    /* SEARCH */
+    .sb { position:relative; }
+    .sb i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); }
+    .sb input {
+      background:var(--card2); border:1px solid var(--border); border-radius:10px;
+      color:var(--text); padding:8px 12px 8px 34px; font-size:0.85rem;
+      font-family:'Plus Jakarta Sans',sans-serif; outline:none; width:240px;
+      transition:border-color 0.2s;
+    }
+    .sb input:focus { border-color:var(--p1); }
+
+    /* TABLE FOOTER */
+    .tf {
+      padding:13px 22px; border-top:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;
+    }
+    .tf-val {
+      font-weight:800; font-size:1rem;
+      background:linear-gradient(135deg,#7C3AED,#EC4899);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+
+    /* CHARTS */
+    .cg { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .cc { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; }
+    .ct {
+      font-size:0.78rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--muted); margin-bottom:20px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .ct-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+    /* EMPTY */
+    .empty { text-align:center; padding:48px 20px; color:var(--muted); }
+    .empty-ic { font-size:2.5rem; margin-bottom:12px; display:block; opacity:0.4; }
+    .empty p { font-size:0.88rem; }
+
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-logo">💰</div>
+    <h2>Smart Expense<br>Analyzer</h2>
+    <p class="by">by <span>Tanisha Jha</span></p>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Menu</div>
+    <a class="nav-item active" onclick="go('dashboard',this)">
+      <div class="nav-icon"><i class="bi bi-grid-fill"></i></div> Dashboard
+    </a>
+    <a class="nav-item" onclick="go('add',this)">
+      <div class="nav-icon"><i class="bi bi-plus-lg"></i></div> Add Expense
+    </a>
+    <a class="nav-item" onclick="go('all',this)">
+      <div class="nav-icon"><i class="bi bi-list-ul"></i></div> All Expenses
+    </a>
+    <a class="nav-item" onclick="go('charts',this)">
+      <div class="nav-icon"><i class="bi bi-bar-chart-line-fill"></i></div> Charts
+    </a>
+  </div>
+  <div class="sidebar-bot">
+    <div class="user-chip">
+      <div class="user-av">TJ</div>
+      <div>
+        <div class="user-name">Tanisha Jha</div>
+        <div class="user-role">BCA · 2nd Year</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="pg-head">
+      <div>
+        <h1>Dashboard 👋</h1>
+        <p>Welcome back, Tanisha! Here's your spending overview.</p>
+      </div>
+      <div class="live-badge"><i class="bi bi-lightning-fill"></i> Live Data</div>
+    </div>
+    <div class="stats">
+      <div class="sc sc1"><div class="sc-icon">💸</div><div class="sc-lbl">Total Spent</div><div class="sc-val" id="s-total">₹0</div><div class="sc-sub">All time</div></div>
+      <div class="sc sc2"><div class="sc-icon">🔢</div><div class="sc-lbl">Transactions</div><div class="sc-val" id="s-count">0</div><div class="sc-sub">Total entries</div></div>
+      <div class="sc sc3"><div class="sc-icon">🏆</div><div class="sc-lbl">Top Category</div><div class="sc-val" id="s-top" style="font-size:1rem;margin-top:6px">—</div><div class="sc-sub">Most spent on</div></div>
+      <div class="sc sc4"><div class="sc-icon">📊</div><div class="sc-lbl">Avg per Entry</div><div class="sc-val" id="s-avg">₹0</div><div class="sc-sub">Average amount</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h5>Recent Transactions</h5><span class="card-sub">Last 5 entries</span></div>
+      <table><thead><tr><th>Date</th><th>Category</th><th>Amount</th></tr></thead>
+      <tbody id="t-recent"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ADD -->
+  <div id="page-add" class="page">
+    <div class="pg-head"><div><h1>Add Expense ➕</h1><p>Record a new transaction</p></div></div>
+    <div class="card form-wrap">
+      <div style="padding:28px">
+        <div class="field"><label>Date</label><input type="text" id="f-date" placeholder="DD-MM-YYYY"/></div>
+        <div class="field">
+          <label>Category</label>
+          <input type="text" id="f-cat" placeholder="e.g. Food, Transport..."/>
+          <div class="chips">
+            <span class="chip" onclick="sc('🍔 Food')">🍔 Food</span>
+            <span class="chip" onclick="sc('🚌 Transport')">🚌 Transport</span>
+            <span class="chip" onclick="sc('🛍️ Shopping')">🛍️ Shopping</span>
+            <span class="chip" onclick="sc('🧾 Bills')">🧾 Bills</span>
+            <span class="chip" onclick="sc('💊 Health')">💊 Health</span>
+            <span class="chip" onclick="sc('🎬 Entertainment')">🎬 Entertainment</span>
+            <span class="chip" onclick="sc('📚 Education')">📚 Education</span>
+          </div>
+        </div>
+        <div class="field"><label>Amount (₹)</label><input type="number" id="f-amt" placeholder="0.00" min="0"/></div>
+        <button class="btn-sub" onclick="addExp()"><i class="bi bi-plus-circle-fill"></i> &nbsp;Add Expense</button>
+        <div class="toast tok" id="t-ok"></div>
+        <div class="toast terr" id="t-err">⚠️ Please fill all fields correctly.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL -->
+  <div id="page-all" class="page">
+    <div class="pg-head"><div><h1>All Expenses 📋</h1><p>Browse and search your transactions</p></div></div>
+    <div class="card">
+      <div class="card-head">
+        <h5>Transactions</h5>
+        <div class="sb"><i class="bi bi-search"></i><input id="s-inp" placeholder="Search category..." oninput="renderAll()"/></div>
+      </div>
+      <table><thead><tr><th>Date</th><th>Category</th><th>Amount</th></tr></thead>
+      <tbody id="t-all"></tbody></table>
+      <div class="tf">
+        <span style="color:var(--muted);font-size:0.8rem" id="t-lbl">0 entries</span>
+        <div><span style="color:var(--muted);font-size:0.82rem;margin-right:8px">Total</span><span class="tf-val" id="t-tot">₹0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div id="page-charts" class="page">
+    <div class="pg-head"><div><h1>Charts 📊</h1><p>Visual breakdown of your spending</p></div></div>
+    <div class="cg">
+      <div class="cc"><div class="ct"><span class="ct-dot" style="background:#7C3AED"></span>Spending by Category</div><canvas id="c-pie" height="240"></canvas></div>
+      <div class="cc"><div class="ct"><span class="ct-dot" style="background:#06B6D4"></span>Category Comparison</div><canvas id="c-bar" height="240"></canvas></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  let data = JSON.parse(localStorage.getItem('tea_v2') || '[]');
+  const PAL = ['#7C3AED','#EC4899','#06B6D4','#10B981','#F59E0B','#EF4444','#8B5CF6','#F97316'];
+  const CAT_C = {'🍔 Food':'#10B981','🚌 Transport':'#06B6D4','🛍️ Shopping':'#EC4899','🧾 Bills':'#F59E0B','💊 Health':'#EF4444','🎬 Entertainment':'#8B5CF6','📚 Education':'#F97316'};
+
+  function clr(cat,i){ return CAT_C[cat]||PAL[i%PAL.length]; }
+
+  function save(){ localStorage.setItem('tea_v2', JSON.stringify(data)); }
+
+  function fmt(n){ return n.toLocaleString('en-IN',{minimumFractionDigits:2}); }
+
+  function summary(arr){
+    const s={};
+    arr.forEach(e=>s[e.cat]=(s[e.cat]||0)+e.amt);
+    return s;
+  }
+
+  function badgeHtml(cat,i){
+    const c=clr(cat,i);
+    return `<span class="badge" style="background:${c}18;color:${c};border:1px solid ${c}30">${cat}</span>`;
+  }
+
+  function amtHtml(amt){
+    return `<span class="amt-grad">₹${fmt(amt)}</span>`;
+  }
+
+  window.onload=()=>{
+    const now=new Date();
+    document.getElementById('f-date').value=
+      `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
+    refreshDash();
+  };
+
+  function go(page,el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    el.classList.add('active');
+    if(page==='dashboard') refreshDash();
+    if(page==='all')       renderAll();
+    if(page==='charts')    renderCharts();
+  }
+
+  function refreshDash(){
+    const total=data.reduce((s,e)=>s+e.amt,0);
+    const count=data.length;
+    const s=summary(data);
+    const top=Object.keys(s).sort((a,b)=>s[b]-s[a])[0]||'—';
+    const avg=count?total/count:0;
+    document.getElementById('s-total').textContent=`₹${fmt(total)}`;
+    document.getElementById('s-count').textContent=count;
+    document.getElementById('s-top').textContent=top;
+    document.getElementById('s-avg').textContent=`₹${avg.toFixed(0)}`;
+    const tb=document.getElementById('t-recent');
+    const rec=[...data].reverse().slice(0,5);
+    if(!rec.length){ tb.innerHTML=`<tr><td colspan="3"><div class="empty"><span class="empty-ic">📭</span><p>No expenses yet — add your first one!</p></div></td></tr>`; return; }
+    tb.innerHTML=rec.map((e,i)=>`<tr><td style="color:var(--muted);font-size:0.82rem">${e.date}</td><td>${badgeHtml(e.cat,i)}</td><td>${amtHtml(e.amt)}</td></tr>`).join('');
+  }
+
+  function sc(cat){ document.getElementById('f-cat').value=cat; }
+
+  function addExp(){
+    const date=document.getElementById('f-date').value.trim();
+    const cat=document.getElementById('f-cat').value.trim();
+    const amt=parseFloat(document.getElementById('f-amt').value);
+    const ok=document.getElementById('t-ok');
+    const err=document.getElementById('t-err');
+    ok.style.display=err.style.display='none';
+    if(!date||!cat||isNaN(amt)||amt<=0){ err.style.display='block'; return; }
+    data.push({date,cat,amt});
+    save();
+    ok.textContent=`✅ ₹${amt.toFixed(2)} added under "${cat}"!`;
+    ok.style.display='block';
+    document.getElementById('f-cat').value='';
+    document.getElementById('f-amt').value='';
+    setTimeout(()=>ok.style.display='none',3000);
+  }
+
+  function renderAll(){
+    const q=(document.getElementById('s-inp')?.value||'').toLowerCase();
+    const f=data.filter(e=>e.cat.toLowerCase().includes(q));
+    const total=f.reduce((s,e)=>s+e.amt,0);
+    document.getElementById('t-tot').textContent=`₹${fmt(total)}`;
+    document.getElementById('t-lbl').textContent=`${f.length} entr${f.length===1?'y':'ies'}`;
+    const tb=document.getElementById('t-all');
+    if(!f.length){ tb.innerHTML=`<tr><td colspan="3"><div class="empty"><span class="empty-ic">🔍</span><p>No results found.</p></div></td></tr>`; return; }
+    tb.innerHTML=[...f].reverse().map((e,i)=>`<tr><td style="color:var(--muted);font-size:0.82rem">${e.date}</td><td>${badgeHtml(e.cat,i)}</td><td>${amtHtml(e.amt)}</td></tr>`).join('');
+  }
+
+  let pie,bar;
+  function renderCharts(){
+    const s=summary(data);
+    const cats=Object.keys(s);
+    const vals=Object.values(s);
+    const cols=cats.map((c,i)=>clr(c,i));
+    if(pie)pie.destroy();
+    if(bar)bar.destroy();
+    const tick={color:'#7878a0',font:{family:'Plus Jakarta Sans',size:11}};
+    const grid={color:'rgba(255,255,255,0.05)'};
+    pie=new Chart(document.getElementById('c-pie'),{
+      type:'doughnut',
+      data:{labels:cats,datasets:[{data:vals,backgroundColor:cols,borderWidth:3,borderColor:'#12121a',hoverOffset:8}]},
+      options:{cutout:'68%',plugins:{legend:{labels:{color:'#7878a0',font:{family:'Plus Jakarta Sans',size:11},padding:16,usePointStyle:true}},tooltip:{callbacks:{label:c=>` ₹${fmt(c.raw)}`}}}}
+    });
+    bar=new Chart(document.getElementById('c-bar'),{
+      type:'bar',
+      data:{labels:cats,datasets:[{data:vals,backgroundColor:cols.map(c=>c+'bb'),borderColor:cols,borderWidth:2,borderRadius:8,borderSkipped:false}]},
+      options:{scales:{x:{ticks:tick,grid},y:{ticks:{...tick,callback:v=>'₹'+v.toLocaleString('en-IN')},grid}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ₹${fmt(c.raw)}`}}}}
+    });
+  }
+</script>
+</body>
+</html>
